@@ -62,8 +62,13 @@ function App() {
     return null;
   }
 
-  // Show maintenance mode screen for non-admin users
-  if (!maintenanceLoading && maintenanceMode?.enabled && session && !hasRole('admin')) {
+  // Show maintenance mode screen for non-admin users, except for reset password page
+  const currentPath = window.location.pathname;
+  if (!maintenanceLoading && 
+      maintenanceMode?.enabled && 
+      session && 
+      !hasRole('admin') && 
+      !currentPath.startsWith('/reset-password')) {
     return (
       <div className="min-h-screen bg-dashboard-dark flex items-center justify-center p-4">
         <Alert className="max-w-2xl w-full bg-dashboard-card border-dashboard-error/50">
