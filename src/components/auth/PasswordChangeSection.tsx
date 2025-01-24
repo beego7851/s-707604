@@ -15,7 +15,7 @@ const PasswordChangeSection = ({ memberNumber }: PasswordChangeSectionProps) => 
       <Button
         onClick={() => setIsDialogOpen(true)}
         variant="outline"
-        className="w-full flex items-center gap-2 bg-dashboard-card hover:bg-dashboard-cardHover"
+        className="w-full flex items-center gap-2 bg-dashboard-accent1 hover:bg-dashboard-accent2 text-white border-dashboard-accent1"
       >
         <Key className="w-4 h-4" />
         Change Password
