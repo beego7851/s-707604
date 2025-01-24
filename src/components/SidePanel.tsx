@@ -29,19 +29,15 @@ const SidePanel = memo(({ currentTab, onTabChange }: SidePanelProps) => {
       return;
     }
 
-    if (prevUserRoleRef.current !== userRole) {
-      console.log('SidePanel rerender: userRole changed', { old: prevUserRoleRef.current, new: userRole });
-      prevUserRoleRef.current = userRole;
-    }
-    if (prevUserRolesRef.current !== userRoles) {
-      console.log('SidePanel rerender: userRoles changed', { old: prevUserRolesRef.current, new: userRoles });
-      prevUserRolesRef.current = userRoles;
-    }
-    if (prevTabRef.current !== currentTab) {
-      console.log('SidePanel rerender: currentTab changed', { old: prevTabRef.current, new: currentTab });
-      prevTabRef.current = currentTab;
-    }
-  }, [userRole, userRoles, hasSession, currentTab]);
+    console.log('SidePanel session state:', {
+      hasSession,
+      userRole,
+      userRoles,
+      currentTab,
+      timestamp: new Date().toISOString()
+    });
+
+  }, [hasSession, userRole, userRoles, currentTab]);
 
   const navigationItems = useMemo(() => [
     {
@@ -86,23 +82,15 @@ const SidePanel = memo(({ currentTab, onTabChange }: SidePanelProps) => {
 
   const handleTabChange = useCallback((tab: string) => {
     console.log('Tab change requested:', {
-      tab,
+      currentTab,
+      newTab: tab,
       canAccess: canAccessTab(tab),
       userRoles,
       timestamp: new Date().toISOString()
     });
 
-    if (!canAccessTab(tab)) {
-      toast({
-        title: "Access Denied",
-        description: "You don't have permission to access this section.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     onTabChange(tab);
-  }, [onTabChange, canAccessTab, userRoles, toast]);
+  }, [onTabChange, canAccessTab, userRoles, currentTab]);
 
   const handleLogoutClick = useCallback(async () => {
     console.log('Logout initiated');
@@ -119,7 +107,6 @@ const SidePanel = memo(({ currentTab, onTabChange }: SidePanelProps) => {
   }, [handleSignOut, toast]);
 
   const roleStatusText = useMemo(() => {
-    console.log('Calculating role status text');
     if (!hasSession) return 'Not authenticated';
     if (roleLoading) return 'Loading access...';
     return userRole ? `Role: ${userRole}` : 'Access restricted';

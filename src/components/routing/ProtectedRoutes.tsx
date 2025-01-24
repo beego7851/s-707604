@@ -16,7 +16,7 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { roleLoading, hasRole, userRole } = useRoleAccess();
+  const { roleLoading, hasRole, userRole, canAccessTab } = useRoleAccess();
   const { syncRoles } = useRoleSync();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -30,8 +30,26 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   const [activeTab, setActiveTab] = useState(pathToTab(location.pathname));
 
   useEffect(() => {
-    setActiveTab(pathToTab(location.pathname));
-  }, [location.pathname]);
+    const newTab = pathToTab(location.pathname);
+    console.log('Path changed, updating active tab:', {
+      path: location.pathname,
+      newTab,
+      canAccess: canAccessTab(newTab)
+    });
+    
+    if (!canAccessTab(newTab)) {
+      console.log('User cannot access tab:', newTab);
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this section.",
+        variant: "destructive",
+      });
+      navigate('/dashboard');
+      return;
+    }
+    
+    setActiveTab(newTab);
+  }, [location.pathname, canAccessTab, navigate, toast]);
 
   useEffect(() => {
     console.log('ProtectedRoutes mounted, session:', !!session);
@@ -88,6 +106,22 @@ const ProtectedRoutes = ({ session }: ProtectedRoutesProps) => {
   }
 
   const handleTabChange = (tab: string) => {
+    console.log('Tab change requested:', {
+      currentTab: activeTab,
+      newTab: tab,
+      canAccess: canAccessTab(tab)
+    });
+
+    if (!canAccessTab(tab)) {
+      console.log('Access denied to tab:', tab);
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this section.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const path = tab === 'dashboard' ? '/' : `/${tab}`;
     navigate(path);
     setActiveTab(tab);
