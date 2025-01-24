@@ -14,7 +14,7 @@ interface SidePanelProps {
 
 const SidePanel = memo(({ currentTab, onTabChange }: SidePanelProps) => {
   const { session, handleSignOut } = useAuthSession();
-  const { userRole, userRoles, roleLoading, hasRole } = useRoleAccess();
+  const { userRole, userRoles, roleLoading, hasRole, canAccessTab } = useRoleAccess();
   const { toast } = useToast();
 
   const prevUserRoleRef = useRef(userRole);
@@ -66,24 +66,43 @@ const SidePanel = memo(({ currentTab, onTabChange }: SidePanelProps) => {
     }
   ], []);
 
-  const shouldShowTab = useCallback((tab: string): boolean => {
-    if (!hasSession) return tab === 'dashboard';
-    if (roleLoading) return tab === 'dashboard';
-    if (!userRoles || !userRole) return tab === 'dashboard';
+  const visibleNavigationItems = useMemo(() => {
+    console.log('Calculating visible navigation items', {
+      hasSession,
+      roleLoading,
+      userRoles,
+      timestamp: new Date().toISOString()
+    });
 
-    switch (tab) {
-      case 'dashboard':
-        return true;
-      case 'users':
-        return hasRole('admin') || hasRole('collector');
-      case 'financials':
-        return hasRole('admin') || hasRole('collector');
-      case 'system':
-        return hasRole('admin');
-      default:
-        return false;
+    if (!hasSession) return navigationItems.filter(item => item.alwaysShow);
+    
+    return navigationItems.filter(item => {
+      if (item.alwaysShow) return true;
+      if (roleLoading) return false;
+      if (!item.requiresRole) return true;
+      return item.requiresRole.some(role => userRoles?.includes(role));
+    });
+  }, [navigationItems, roleLoading, userRoles, hasSession]);
+
+  const handleTabChange = useCallback((tab: string) => {
+    console.log('Tab change requested:', {
+      tab,
+      canAccess: canAccessTab(tab),
+      userRoles,
+      timestamp: new Date().toISOString()
+    });
+
+    if (!canAccessTab(tab)) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to access this section.",
+        variant: "destructive"
+      });
+      return;
     }
-  }, [roleLoading, userRoles, userRole, hasRole, hasSession]);
+
+    onTabChange(tab);
+  }, [onTabChange, canAccessTab, userRoles, toast]);
 
   const handleLogoutClick = useCallback(async () => {
     console.log('Logout initiated');
@@ -106,20 +125,14 @@ const SidePanel = memo(({ currentTab, onTabChange }: SidePanelProps) => {
     return userRole ? `Role: ${userRole}` : 'Access restricted';
   }, [roleLoading, userRole, hasSession]);
 
-  const visibleNavigationItems = useMemo(() => {
-    console.log('Calculating visible navigation items');
-    if (!hasSession) return navigationItems.filter(item => item.alwaysShow);
-    return navigationItems.filter(item => 
-      item.alwaysShow || (!roleLoading && item.requiresRole?.some(role => userRoles?.includes(role)))
-    );
-  }, [navigationItems, roleLoading, userRoles, hasSession]);
-
-  const handleTabChange = useCallback((tab: string) => {
-    console.log('Tab change requested:', tab);
-    onTabChange(tab);
-  }, [onTabChange]);
-
-  console.log('SidePanel render', { userRole, roleLoading, hasSession });
+  console.log('SidePanel render', { 
+    userRole, 
+    roleLoading, 
+    hasSession,
+    visibleTabs: visibleNavigationItems.map(item => item.tab),
+    currentTab,
+    timestamp: new Date().toISOString()
+  });
 
   return (
     <div className="flex flex-col h-full bg-dashboard-card border-r border-dashboard-cardBorder">
