@@ -69,7 +69,7 @@ export const useRoleAccess = () => {
           throw memberError;
         }
 
-        // Fetch all roles with retry logic and no caching
+        // Fetch all roles with retry logic
         let retryCount = 0;
         const maxRetries = 3;
         let roleData = null;
